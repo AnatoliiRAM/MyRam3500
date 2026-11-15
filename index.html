@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truck CPM Manager</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#f1f5f9;font-family:Arial,sans-serif;padding:18px}
+header{padding:20px 0}
+h1{font-size:27px;margin:0;color:#fbbf24}
+header p{color:#94a3b8}
+.card{background:#1e293b;padding:17px;border-radius:14px;margin:14px 0}
+h2{font-size:18px;margin-top:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#263449;padding:13px;border-radius:10px}
+.stat small{color:#94a3b8}
+.stat strong{display:block;font-size:21px;margin-top:8px}
+input,select,button{width:100%;padding:12px;border-radius:8px;border:1px solid #475569;background:#334155;color:white;margin:5px 0;font-size:15px}
+button{background:#d99b17;color:#111827;font-weight:bold;border:0;cursor:pointer}
+button.delete{background:#7f1d1d;color:white;width:auto;padding:8px}
+label{font-size:13px;color:#cbd5e1}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:10px 5px;border-bottom:1px solid #475569;text-align:left}
+.green{color:#4ade80}
+.red{color:#f87171}
+.muted{color:#94a3b8}
+img.receipt{width:65px;height:65px;object-fit:cover;border-radius:7px}
+</style>
+</head>
+<body>
+<header>
+<h1>🚛 TRUCK CPM MANAGER</h1>
+<p>Professional Trucking Cost & Profit Tracker</p>
+</header>
+
+<div class="card">
+<h2>📊 Financial Dashboard</h2>
+<div class="grid">
+<div class="stat"><small>Total Miles</small><strong id="miles">0</strong></div>
+<div class="stat"><small>Total Revenue</small><strong id="revenue">$0</strong></div>
+<div class="stat"><small>Total Expenses</small><strong id="expenses">$0</strong></div>
+<div class="stat"><small>Net Profit</small><strong id="profit">$0</strong></div>
+<div class="stat"><small>Cost Per Mile</small><strong id="cpm">$0</strong></div>
+<div class="stat"><small>Profit Per Mile</small><strong id="ppm">$0</strong></div>
+</div>
+</div>
+
+<div class="card">
+<h2>🛣️ Add Trip</h2>
+<label>Trip / Load Name</label>
+<input id="tripName" placeholder="Miami to New York">
+<div class="grid">
+<div><label>Loaded Miles</label><input id="loaded" type="number" min="0" placeholder="1300"></div>
+<div><label>Deadhead Miles</label><input id="deadhead" type="number" min="0" placeholder="150"></div>
+</div>
+<label>Revenue ($)</label>
+<input id="tripRevenue" type="number" min="0" step=".01" placeholder="4500">
+<label>Date</label>
+<input id="tripDate" type="date">
+<button onclick="addTrip()">+ Add Trip</button>
+</div>
+
+<div class="card">
+<h2>💵 Add Expense</h2>
+<label>Expense Category</label>
+<select id="category">
+<option>Diesel / Fuel</option>
+<option>DEF</option>
+<option>Maintenance</option>
+<option>Tires</option>
+<option>Truck Payment</option>
+<option>Trailer Payment</option>
+<option>Insurance</option>
+<option>Tolls</option>
+<option>Parking</option>
+<option>Repairs</option>
+<option>Permits / Registration</option>
+<option>Other</option>
+</select>
+<label>Amount ($)</label>
+<input id="amount" type="number" min="0" step=".01" placeholder="250">
+<label>Description</label>
+<input id="description" placeholder="Fuel at Pilot">
+<label>Date</label>
+<input id="expenseDate" type="date">
+<label>📸 Upload Receipt / Check</label>
+<input id="receipt" type="file" accept="image/*">
+<button onclick="addExpense()">+ Save Expense</button>
+</div>
+
+<div class="card">
+<h2>📋 Trip History</h2>
+<div id="tripList" class="muted">No trips yet</div>
+</div>
+
+<div class="card">
+<h2>🧾 Expense History</h2>
+<div id="expenseList" class="muted">No expenses yet</div>
+</div>
+
+<div class="card">
+<h2>➕ Add Custom Expense Category</h2>
+<input id="newCategory" placeholder="New category name">
+<button onclick="addCategory()">Add Category</button>
+</div>
+
+<div class="card">
+<button onclick="exportData()">⬇ Export Data (CSV)</button>
+<button onclick="backupData()">💾 Backup All Data (JSON)</button>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let trips = JSON.parse(localStorage.getItem('trips') || '[]');
+let expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+let categories = JSON.parse(localStorage.getItem('categories') || '[]');
+
+function save(){
+localStorage.setItem('trips',JSON.stringify(trips));
+localStorage.setItem('expenses',JSON.stringify(expenses));
+localStorage.setItem('categories',JSON.stringify(categories));
+render();
+}
+function money(n){return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function totalMiles(){return trips.reduce((s,t)=>s+t.loaded+t.deadhead,0)}
+function totalRevenue(){return trips.reduce((s,t)=>s+t.revenue,0)}
+function totalExpenses(){return expenses.reduce((s,e)=>s+e.amount,0)}
+
+function render(){
+const m=totalMiles(),r=totalRevenue(),e=totalExpenses(),p=r-e;
+$('miles').textContent=m.toLocaleString();
+$('revenue').textContent=money(r);
+$('expenses').textContent=money(e);
+$('profit').textContent=money(p);
+$('profit').className=p>=0?'green':'red';
+$('cpm').textContent=money(m?e/m:0);
+$('ppm').textContent=money(m?p/m:0);
+
+$('tripList').innerHTML=trips.length?'<table><tr><th>Trip</th><th>Miles</th><th>Revenue</th><th></th></tr>'+
+trips.map(t=>`<tr><td>${esc(t.name)}<br><small>${esc(t.date)}</small></td><td>${(t.loaded+t.deadhead).toLocaleString()}<br><small class="muted">DH: ${t.deadhead}</small></td><td>${money(t.revenue)}</td><td><button class="delete" onclick="deleteTrip('${t.id}')">×</button></td></tr>`).join('')+'</table>':'No trips yet';
+
+$('expenseList').innerHTML=expenses.length?'<table><tr><th>Expense</th><th>Amount</th><th>Receipt</th><th></th></tr>'+
+expenses.map(e=>`<tr><td>${esc(e.category)}<br><small>${esc(e.description)} · ${esc(e.date)}</small></td><td>${money(e.amount)}</td><td>${e.receipt?`<a href="${e.receipt}" target="_blank"><img class="receipt" src="${e.receipt}"></a>`:'—'}</td><td><button class="delete" onclick="deleteExpense('${e.id}')">×</button></td></tr>`).join('')+'</table>':'No expenses yet';
+
+$('category').innerHTML=['Diesel / Fuel','DEF','Maintenance','Tires','Truck Payment','Trailer Payment','Insurance','Tolls','Parking','Repairs','Permits / Registration','Other',...categories].map(c=>`<option>${esc(c)}</option>`).join('');
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+function addTrip(){
+const name=$('tripName').value.trim(),loaded=Number($('loaded').value),deadhead=Number($('deadhead').value),revenue=Number($('tripRevenue').value);
+if(!name||loaded+deadhead<=0||revenue<0){alert('Enter trip name, miles and revenue');return}
+trips.push({id:crypto.randomUUID(),name,loaded,deadhead,revenue,date:$('tripDate').value});
+['tripName','loaded','deadhead','tripRevenue','tripDate'].forEach(id=>$(id).value='');
+save();
+}
+function addExpense(){
+const amount=Number($('amount').value);
+if(!amount||amount<0){alert('Enter expense amount');return}
+const file=$('receipt').files[0];
+const finish=receipt=>{
+expenses.push({id:crypto.randomUUID(),category:$('category').value,amount,description:$('description').value,date:$('expenseDate').value,receipt});
+['amount','description','expenseDate','receipt'].forEach(id=>$(id).value='');
+save();
+};
+if(file){
+if(file.size>1200000){alert('Receipt image is too large. Please use an image under 1.2 MB.');return}
+const reader=new FileReader();
+reader.onload=()=>finish(reader.result);
+reader.readAsDataURL(file);
+}else finish(null);
+}
+function addCategory(){
+const c=$('newCategory').value.trim();
+if(!c)return;
+if(!categories.includes(c))categories.push(c);
+$('newCategory').value='';
+save();
+}
+function deleteTrip(id){if(confirm('Delete this trip?')){trips=trips.filter(t=>t.id!==id);save()}}
+function deleteExpense(id){if(confirm('Delete this expense?')){expenses=expenses.filter(e=>e.id!==id);save()}}
+function backupData(){
+const blob=new Blob([JSON.stringify({trips,expenses,categories},null,2)],{type:'application/json'});
+download(blob,'truck-cpm-backup.json');
+}
+function exportData(){
+const rows=[['Type','Name/Category','Date','Miles','Deadhead','Revenue','Expense']];
+trips.forEach(t=>rows.push(['Trip',t.name,t.date,t.loaded,t.deadhead,t.revenue,'']));
+expenses.forEach(e=>rows.push(['Expense',e.category,e.date,'','','',e.amount]));
+const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+download(new Blob([csv],{type:'text/csv'}),'truck-cpm-report.csv');
+}
+function download(blob,name){
+const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);
+}
+render();
+</script>
+</body>
+</html>
