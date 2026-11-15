@@ -231,15 +231,27 @@ async def show_expenses(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg += f"#{r[0]} {r[1]}: ${r[2]:,.2f}\n{r[3]}\n\n"
     await update.message.reply_text(msg, reply_markup=menu())
 
-def main():
+import asyncio
+
+async def main():
     init_db()
     app = Application.builder().token(TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("cancel", cancel))
     app.add_handler(MessageHandler(filters.PHOTO, photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
+
     print("Truck CPM Manager bot is running")
-    app.run_polling()
+
+    async with app:
+        await app.start()
+        await app.updater.start_polling()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            await app.updater.stop()
+            await app.stop()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
