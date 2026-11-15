@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from datetime import datetime
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     ContextTypes, filters
@@ -31,6 +31,12 @@ def init_db():
 
 def menu():
     return ReplyKeyboardMarkup([
+        [KeyboardButton(
+            "📊 OPEN TRUCK CPM MANAGER",
+            web_app=WebAppInfo(
+                url="https://anatoliiram.github.io/MyRam3500/"
+            )
+        )],
         ["🚛 Add Trip", "💵 Add Expense"],
         ["📊 Reports", "📋 Trips"],
         ["🧾 Expenses", "❌ Cancel"]
